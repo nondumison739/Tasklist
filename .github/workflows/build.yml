@@ -33,7 +33,7 @@ jobs:
 
       # Step 4: Build project (skip tests for now)
       - name: Build with Maven (skip tests)
-        run: mvn -B -f Tasklist/pom.xml clean package -DskipTests
+        run: mvn -B -f pom.xml clean package -DskipTests
 
 
   docker:
