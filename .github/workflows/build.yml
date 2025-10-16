@@ -48,7 +48,7 @@ jobs:
 
       # Step 2: Build Docker image (Dockerfile inside Tasklist/)
       - name: Build Docker image
-        run: docker build -t tasklist-app Tasklist/
+        run: docker build -t tasklist-app .
 
       # Step 3: Login to GitHub Container Registry (optional)
       - name: Login to GitHub Container Registry
