@@ -16,10 +16,10 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Set up Java
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       # Step 3: Cache Maven dependencies
@@ -32,7 +32,8 @@ jobs:
 
       # Step 4: Build (skip tests for now)
       - name: Build with Maven (skip tests)
-        run: mvn -B -f Tasklist/pom.xml clean package -DskipTests
+        run:  mvn -B clean package -DskipTests
+
 
   docker:
     runs-on: ubuntu-latest
@@ -44,7 +45,9 @@ jobs:
 
       # Step 5: Build Docker image
       - name: Build Docker image
-        run: docker build -t tasklist-app Tasklist/
+        run: docker build -t tasklist-app .
+
+
 
       # Step 6: (Optional) Push to GitHub Container Registry
       - name: Login to GitHub Container Registry
