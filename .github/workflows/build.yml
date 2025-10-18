@@ -27,12 +27,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('Tasklist/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      # Step 4: Build with Maven (skip tests)
+      # Step 4: Build (skip tests for now)
       - name: Build with Maven (skip tests)
-        run: mvn -B clean package -DskipTests
+        run: mvn -B -f Tasklist/pom.xml clean package -DskipTests
 
   docker:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
 
       # Step 5: Build Docker image
       - name: Build Docker image
-        run: docker build -t tasklist-app .
+        run: docker build -t tasklist-app Tasklist/
 
       # Step 6: (Optional) Push to GitHub Container Registry
       - name: Login to GitHub Container Registry
