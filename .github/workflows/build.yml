@@ -32,15 +32,15 @@ jobs:
 
       # 4️⃣ Clean up old DB (avoid port/container conflicts)
       - name: Clean up old test DB
-        run: docker rm -f test-db || true
+        run: docker rm -f tasklistdb || true
 
       # 5️⃣ Start PostgreSQL test database
       - name: Start PostgreSQL for integration tests
         run: |
-          docker run -d --name test-db \
+          docker run -d --name tasklistdb \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=testdb \
+            -e POSTGRES_DB=tasklistdb \
             -p 5432:5432 postgres:15
         timeout-minutes: 2
 
@@ -79,7 +79,7 @@ jobs:
           docker run -d \
             --name tasklist-app \
             -p 8080:8080 \
-            --env SPRING_DATASOURCE_URL=jdbc:postgresql://test-db:5432/testdb \
+            --env SPRING_DATASOURCE_URL=jdbc:postgresql://10.255.255.254:5432/tasklistdb \
             --env SPRING_DATASOURCE_USERNAME=postgres \
             --env SPRING_DATASOURCE_PASSWORD=postgres \
             --network host \
