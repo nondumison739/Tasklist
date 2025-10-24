@@ -1,99 +1,86 @@
-name: Build, Test, Push, and Deploy Tasklist App
+name: Build, Test, and Deploy Tasklist API
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-test:
-    name: Build and Test App
-    runs-on: self-hosted
+  build-test-deploy:
+    runs-on: self-hosted  # 👈 uses your VM runner
 
     steps:
-      # 1️⃣ Checkout the repository
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up JDK 21
-      - name: Set up Java 21
+      # 2️⃣ Install Java 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
 
-      # 3️⃣ Set up Database (PostgreSQL) container for integration tests
-      - name: Start PostgreSQL for tests
+      # 3️⃣ Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      # 4️⃣ Clean up old DB (avoid port/container conflicts)
+      - name: Clean up old test DB
+        run: docker rm -f test-db || true
+
+      # 5️⃣ Start PostgreSQL test database
+      - name: Start PostgreSQL for integration tests
         run: |
-          docker run -d \
-            --name test-db \
+          docker run -d --name test-db \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=tasklistdb \
-            -p 5433:5432 \
-            postgres:15
-          echo "Waiting for database to start..."
-          sleep 15
+            -e POSTGRES_DB=testdb \
+            -p 5432:5432 postgres:15
+        timeout-minutes: 2
 
-      # 4️⃣ Run Maven build and tests
-      - name: Build and Test with Maven
-        run: mvn package -DskipTests 
+      # 6️⃣ Wait for DB to be ready
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL to start..."
+          sleep 10
 
-      # 5️⃣ Stop test database container
-      - name: Stop test database
-        run: docker stop test-db && docker rm test-db
+      # 7️⃣ Build and test app with Maven
+      - name: Build and test with Maven
+        run: mvn -B clean verify
 
-  build-and-push:
-    name: Build and Push Docker Image
-    runs-on: self-hosted
-    needs: build-test
-
-    steps:
-      # 1️⃣ Checkout repository again
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2️⃣ Log in to Docker Hub
+      # 8️⃣ Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3️⃣ Build Docker image
+      # 9️⃣ Build Docker image
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/tasklist-app:latest .
 
-      # 4️⃣ Push Docker image
+      # 🔟 Push Docker image to Docker Hub
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/tasklist-app:latest
 
-  deploy:
-    name: Deploy to VM
-    runs-on: self-hosted
-    needs: build-and-push
+      # 1️⃣1️⃣ Stop and remove old app container (if running)
+      - name: Clean up old app container
+        run: docker rm -f tasklist-app || true
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy Docker container
+      # 1️⃣2️⃣ Deploy and run new app container on VM
+      - name: Run Tasklist App container
         run: |
-          echo "Stopping old container if exists..."
-          docker stop tasklist-app || true
-          docker rm tasklist-app || true
-
-          echo "Pulling latest image from Docker Hub..."
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/tasklist-app:latest
-
-          echo "Starting new container..."
           docker run -d \
-            -p 8080:8080 \
             --name tasklist-app \
-            -e SPRING_DATASOURCE_URL=jdbc:postgresql://tasklist-db:5432/tasklistdb \
-            -e SPRING_DATASOURCE_USERNAME=postgres \
-            -e SPRING_DATASOURCE_PASSWORD=postgres \
-            --network tasklist-network \
+            -p 8080:8080 \
+            --env SPRING_DATASOURCE_URL=jdbc:postgresql://test-db:5432/testdb \
+            --env SPRING_DATASOURCE_USERNAME=postgres \
+            --env SPRING_DATASOURCE_PASSWORD=postgres \
+            --network host \
             ${{ secrets.DOCKERHUB_USERNAME }}/tasklist-app:latest
-
-          echo "✅ Deployment successful!"
