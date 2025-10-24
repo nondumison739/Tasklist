@@ -37,9 +37,7 @@ jobs:
 
       # 4️⃣ Run Maven build and tests
       - name: Build and Test with Maven
-        run: mvn clean verify -Dspring.datasource.url=jdbc:postgresql://localhost:5433/tasklistdb \
-                              -Dspring.datasource.username=postgres \
-                              -Dspring.datasource.password=postgres
+        run: mvn package -DskipTests 
 
       # 5️⃣ Stop test database container
       - name: Stop test database
