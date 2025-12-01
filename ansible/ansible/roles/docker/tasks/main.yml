@@ -1,0 +1,9 @@
+---
+- name: Build Docker image
+  command: docker build -t {{ docker_image }} .
+
+- name: Log in to Docker Hub
+  command: docker login -u {{ lookup('env','DOCKER_USER') }} -p {{ lookup('env','DOCKER_PASS') }}
+
+- name: Push Docker image
+  command: docker push {{ docker_image }}

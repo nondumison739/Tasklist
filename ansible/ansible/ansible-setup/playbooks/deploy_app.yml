@@ -1,0 +1,6 @@
+---
+- name: Deploy Tasklist Application
+  hosts: servers
+  become: yes
+  roles:
+    - setup_tasklist

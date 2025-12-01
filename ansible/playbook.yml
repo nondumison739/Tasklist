@@ -1,0 +1,14 @@
+---
+- name: CI/CD Pipeline with Docker, Kubernetes and ArgoCD
+  hosts: localhost
+  connection: local
+  vars:
+    docker_image: "your_dockerhub_username/tasklist-app:latest"
+    k8s_namespace: "tasklist"
+    argocd_app: "tasklist-app"
+    kubeconfig_path: "~/.kube/config"
+
+  roles:
+    - docker
+    - kubernetes
+    - argocd

@@ -1,0 +1,47 @@
+---
+- name: Ensure Docker network exists
+  docker_network:
+    name: tasklist-network
+    state: present
+
+- name: Remove old Postgres container if exists
+  docker_container:
+    name: tasklistdb
+    state: absent
+    force_kill: yes
+
+- name: Remove old Tasklist app container if exists
+  docker_container:
+    name: tasklist-app
+    state: absent
+    force_kill: yes
+
+- name: Run Postgres container
+  docker_container:
+    name: tasklistdb
+    image: postgres:15
+    state: started
+    restart_policy: always
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taskdb
+    networks:
+      - name: tasklist-network
+    published_ports:
+      - "5433:5432"
+
+- name: Run Tasklist app container
+  docker_container:
+    name: tasklist-app
+    image: nondumisot98/tasklist-app:latest
+    state: started
+    restart_policy: always
+    networks:
+      - name: tasklist-network
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tasklistdb:5432/taskdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    published_ports:
+      - "8080:8080"
