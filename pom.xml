@@ -12,7 +12,10 @@
     <description>Java Spring Boot Tasklist API using PostgreSQL</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17git add .github/workflows/build.yml
+git commit -m "Fix Java version mismatch (use JDK 21)"
+git push origin main
+</java.version>
         <spring.boot.version>3.3.4</spring.boot.version>
     </properties>
 
